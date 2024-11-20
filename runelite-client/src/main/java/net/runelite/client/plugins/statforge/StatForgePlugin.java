@@ -9,6 +9,7 @@ import net.runelite.api.ScriptEvent;
 import net.runelite.api.Skill;
 import net.runelite.api.events.*;
 import net.runelite.api.widgets.JavaScriptCallback;
+import net.runelite.api.widgets.WidgetTextAlignment;
 import net.runelite.api.widgets.WidgetType;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -114,8 +115,8 @@ public class StatForgePlugin extends Plugin {
         if ( widgetID == 0 ) return;
         if ( skill_widgets.containsKey( widgetID ) ) {
             var skill = skill_widgets.get( widgetID );
-            var name = skill.getName().toLowerCase();
-            name = name.substring(0, 1).toUpperCase() + name.substring(1);
+            var name  = skill.getName().toLowerCase();
+            name = name.substring( 0, 1 ).toUpperCase() + name.substring( 1 );
             
             client.createMenuEntry( -1 )
                   .setOption( name + " Graph" )
@@ -161,49 +162,78 @@ public class StatForgePlugin extends Plugin {
     public void toggleStatsWindow ( Skill skill ) {
         var statsWindow = client.getWidget( stats_widget_parent );
         
-        if ( activeWindow != null || (statsWindow.getChildren() != null && Arrays.stream( statsWindow.getChildren() ).anyMatch( w -> w != null) ) ) {
+        if ( skill == null || activeWindow == skill ) {
             statsWindow.deleteAllChildren();
             activeWindow = null;
             return;
-        } else {
-            log.info( "Creating " + skill.getName() + " stats window" );
-            activeWindow = skill;
-            
-            statsWindow.deleteAllChildren();
-            
-            var exit = statsWindow.createChild( 28, WidgetType.GRAPHIC );
-            exit.setModelZoom( 100 );
-            exit.setSpriteId( 542 );
-            exit.setOriginalX( 482 );
-            exit.setOriginalY( 6 );
-            exit.setOriginalWidth( 26 );
-            exit.setOriginalHeight( 23 );
-            exit.setHasListener( true );
-            exit.setOnClickListener( ( JavaScriptCallback ) this::exit );
-            exit.setNoClickThrough( true );
-            
-            var backgroundCenter = statsWindow.createChild( 3, WidgetType.MODEL );
-            backgroundCenter.setModelId( 20836 );
-            backgroundCenter.setRotationX( 512 );
-            backgroundCenter.setModelType( 1 );
-            backgroundCenter.setOriginalX( 240 );
-            backgroundCenter.setOriginalY( 161 );
-            backgroundCenter.setOriginalWidth( 32 );
-            backgroundCenter.setOriginalHeight( 32 );
-            backgroundCenter.setModelZoom( 1393 );
-            backgroundCenter.setNoClickThrough( true );
-            backgroundCenter.setNoScrollThrough( true );
-            
-            var text = statsWindow.createChild( 1, WidgetType.TEXT );
-            
-            
-            statsWindow.setHidden( false );
-            for ( var widget : statsWindow.getChildren() ) {
-                if ( widget == null ) continue;
-                widget.revalidate();
-            }
-            statsWindow.revalidate();
         }
+        
+        if ( statsWindow.getChildren() != null &&
+             Arrays.stream( statsWindow.getChildren() ).anyMatch( w -> w != null )
+        ) {
+            statsWindow.deleteAllChildren();
+        }
+        
+        log.info( "Creating " + skill.getName() + " stats window" );
+        activeWindow = skill;
+        
+        statsWindow.deleteAllChildren();
+        
+        var exit = statsWindow.createChild( 28, WidgetType.GRAPHIC );
+        exit.setModelZoom( 100 );
+        exit.setSpriteId( 542 );
+        exit.setOriginalX( 482 );
+        exit.setOriginalY( 6 );
+        exit.setOriginalWidth( 26 );
+        exit.setOriginalHeight( 23 );
+        exit.setHasListener( true );
+        exit.setOnClickListener( ( JavaScriptCallback ) this::exit );
+        exit.setNoClickThrough( true );
+        
+        var backgroundCenter = statsWindow.createChild( 3, WidgetType.MODEL );
+        backgroundCenter.setModelId( 20836 );
+        backgroundCenter.setRotationX( 512 );
+        backgroundCenter.setModelType( 1 );
+        backgroundCenter.setOriginalX( 240 );
+        backgroundCenter.setOriginalY( 161 );
+        backgroundCenter.setOriginalWidth( 32 );
+        backgroundCenter.setOriginalHeight( 32 );
+        backgroundCenter.setModelZoom( 1393 );
+        backgroundCenter.setNoClickThrough( true );
+        backgroundCenter.setNoScrollThrough( true );
+        
+        var banner = statsWindow.createChild( 2, WidgetType.MODEL );
+        banner.setModelId( 20852 );
+        banner.setRotationX( 512 );
+        banner.setRotationZ( 1024 );
+        banner.setModelType( 1 );
+        banner.setOriginalX( 162 );
+        banner.setOriginalY( 13 );
+        banner.setOriginalWidth( 32 );
+        banner.setOriginalHeight( 32 );
+        banner.setModelZoom( 1357 );
+        banner.setNoClickThrough( true );
+        banner.setNoScrollThrough( true );
+        
+        var label = statsWindow.createChild( 7, WidgetType.TEXT );
+        label.setText( skill.getName().substring( 0, 1 ).toUpperCase().concat( skill.getName().toLowerCase().substring(
+                1 ) ).concat( " Stats" ) );
+        label.setTextColor( 0x46320A );
+        label.setFontId( 645 );
+        label.setTextShadowed( false );
+        label.setOriginalX( 35 );
+        label.setOriginalY( 7 );
+        label.setOriginalWidth( 291 );
+        label.setOriginalHeight( 34 );
+        label.setXTextAlignment( WidgetTextAlignment.CENTER );
+        label.setYTextAlignment( WidgetTextAlignment.TOP );
+        
+        statsWindow.setHidden( false );
+        for ( var widget : statsWindow.getChildren() ) {
+            if ( widget == null ) continue;
+            widget.revalidate();
+        }
+        statsWindow.revalidate();
     }
     
     Skill activeWindow = null;
