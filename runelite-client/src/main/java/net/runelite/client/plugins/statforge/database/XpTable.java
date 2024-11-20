@@ -6,6 +6,8 @@ import net.runelite.api.Skill;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class XpTable implements ITable {
@@ -73,5 +75,32 @@ public class XpTable implements ITable {
 		} catch ( SQLException e ) {
 			log.error( e.getMessage() );
 		}
+	}
+	
+	public double[][] get ( String user, Skill skill ) {
+		var skill_id = skill.ordinal();
+		var delta = -1;
+		
+		List< double[] > ret = new ArrayList<>();
+		
+		try ( PreparedStatement get_previous_xp = database.sqlite.connection.prepareStatement(
+				"select xp.total, actions.time from xp join main.actions as actions where uuid=? and skill=? ORDER BY actions.time DESC;\n"
+		) ) {
+			get_previous_xp.setString( 1, user );
+			get_previous_xp.setInt( 2, skill_id );
+			var result = get_previous_xp.executeQuery();
+			
+			var meta = result.getMetaData();
+			
+			while ( result.next() ) {
+				ret.add( new double[]{
+						( double ) result.getInt( result.findColumn( "total" ) ),
+				} );
+				log.info( Double.toString( ret.get( ret.size() - 1 )[ 0 ] ) );
+			}
+		} catch ( SQLException e ) {
+			log.error( e.getMessage() );
+		}
+		return ( ( double[][] ) ( ret.toArray() ));
 	}
 }
