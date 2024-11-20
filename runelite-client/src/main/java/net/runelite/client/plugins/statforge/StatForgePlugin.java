@@ -19,6 +19,8 @@ import net.runelite.client.plugins.statforge.database.SQLiteDatabase;
 import net.runelite.client.plugins.statforge.database.TrackerDatabase;
 
 import java.io.File;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,10 +85,9 @@ public class StatForgePlugin extends Plugin {
         final var skill        = statChanged.getSkill();
         final var currentXp    = statChanged.getXp();
         final var currentLevel = statChanged.getLevel();
-        final var timestamp    = System.currentTimeMillis();
         final var user         = client.getAccountHash();
         new Thread( () -> {
-            final var action = database.table_action.build( user, timestamp, "xp" );
+            final var action = database.table_action.build( user, LocalDateTime.now(), "xp" );
             
             database.table_xp.post( action, skill, currentLevel, currentXp );
         } ).start();
@@ -95,9 +96,8 @@ public class StatForgePlugin extends Plugin {
     @Subscribe
     public void onItemContainerChanged ( ItemContainerChanged event ) {
         final var user      = client.getAccountHash();
-        final var timestamp = System.currentTimeMillis();
         new Thread( () -> {
-            final var action = database.table_action.build( user, timestamp, "item" );
+            final var action = database.table_action.build( user, LocalDateTime.now(), "item" );
             
             database.table_inventory.update( action, event.getItemContainer() );
         } ).start();
@@ -179,7 +179,7 @@ public class StatForgePlugin extends Plugin {
         
         statsWindow.deleteAllChildren();
         
-        var exit = statsWindow.createChild( 28, WidgetType.GRAPHIC );
+        var exit = statsWindow.createChild( 1, WidgetType.GRAPHIC );
         exit.setModelZoom( 100 );
         exit.setSpriteId( 542 );
         exit.setOriginalX( 482 );
@@ -227,6 +227,42 @@ public class StatForgePlugin extends Plugin {
         label.setOriginalHeight( 34 );
         label.setXTextAlignment( WidgetTextAlignment.CENTER );
         label.setYTextAlignment( WidgetTextAlignment.TOP );
+        
+        var data = database.table_xp.get( Long.toHexString( client.getAccountHash() ), skill, LocalDateTime.now().minusMinutes( 20 ), LocalDateTime.now() );
+
+        if ( data.length != 0 ) {
+            
+            var       min       = data[ 0 ][ 1 ];
+            var       max       = data[ data.length - 1 ][ 1 ];
+            var       start     = data[ 0 ][ 0 ];
+            var       end       = data[ data.length - 1 ][ 0 ];
+            final int width     = 100;
+            final int height    = 25;
+            var       delta     = ( max - min ) / height;
+            var       timedelta = ( end - start ) / height;
+            var       i         = 0;
+            var       j         = 0;
+            var       prevdots  = 0;
+            for ( double t = start; t <= end && i < data.length; t += timedelta ) {
+                for ( ; data[ i ][ 0 ] < t && i < data.length; i++ ) {
+                    var point = statsWindow.createChild( 20 + j, WidgetType.TEXT );
+                    var dots  = ( int ) Math.floor( ( data[ i ][ 1 ] - min ) / delta );
+                    log.info( "" + i + " " + data[ i ][ 1 ] + " " + delta + " " + dots );
+                    point.setText( dots + " ".repeat( prevdots ) + ".".repeat( dots - prevdots ) );
+                    point.setTextColor( 0x46320A );
+                    point.setFontId( 495 );
+                    point.setTextShadowed( false );
+                    point.setOriginalX( 35 );
+                    point.setOriginalY( 75 + j );
+                    point.setOriginalWidth( 291 );
+                    point.setOriginalHeight( 15 );
+                    point.setXTextAlignment( WidgetTextAlignment.LEFT );
+                    point.setYTextAlignment( WidgetTextAlignment.CENTER );
+                    prevdots = dots;
+                    j++;
+                }
+            }
+        }
         
         statsWindow.setHidden( false );
         for ( var widget : statsWindow.getChildren() ) {

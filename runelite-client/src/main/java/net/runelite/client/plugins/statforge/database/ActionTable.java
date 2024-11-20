@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 
 @Slf4j
 public class ActionTable implements ITable {
@@ -40,10 +42,10 @@ public class ActionTable implements ITable {
 	
 	private static final SimpleDateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 	
-	public String build ( long user, long now, String name ) {
-		var uid = Long.toHexString( now );
+	public String build ( long user, LocalDateTime now, String name ) {
+		var uid = Long.toHexString( now.getNano() );
 		var uuid = Long.toHexString( user );
-		var timestamp = dateFormat.format( now );
+		var timestamp = Timestamp.valueOf( now );
 		var name_id = database.table_action_names.get( name );
 		
 		try ( PreparedStatement insert_created_action = database.sqlite.connection.prepareStatement(
@@ -51,7 +53,7 @@ public class ActionTable implements ITable {
 		) ) {
 			insert_created_action.setString( 1, uid );
 			insert_created_action.setString( 2, uuid );
-			insert_created_action.setString( 3, timestamp );
+			insert_created_action.setTimestamp( 3, timestamp );
 			insert_created_action.setInt( 4, name_id );
 			insert_created_action.execute();
 			return uid;
