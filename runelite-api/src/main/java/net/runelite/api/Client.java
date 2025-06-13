@@ -55,6 +55,7 @@ import net.runelite.api.vars.AccountType;
 import net.runelite.api.widgets.ItemQuantityMode;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetConfig;
+import net.runelite.api.widgets.WidgetConfigNode;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.api.widgets.WidgetModalMode;
 import net.runelite.api.worldmap.MapElementConfig;
@@ -80,6 +81,8 @@ public interface Client extends OAuthApi, GameEngine
 	void setDrawCallbacks(DrawCallbacks drawCallbacks);
 
 	String getBuildID();
+
+	int getEnvironment();
 
 	/**
 	 * Gets the current modified level of a skill.
@@ -382,7 +385,7 @@ public interface Client extends OAuthApi, GameEngine
 	 *
 	 * @param id the item ID
 	 * @return the corresponding item composition
-	 * @see ItemID
+	 * @see net.runelite.api.gameval.ItemID
 	 */
 	@Nonnull
 	ItemComposition getItemDefinition(int id);
@@ -847,7 +850,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * @param varps passed varbits
 	 * @param varbitId the variable ID
 	 * @return the value
-	 * @see Varbits
+	 * @see net.runelite.api.gameval.VarbitID
 	 */
 	@VisibleForDevtools
 	int getVarbitValue(int[] varps, @Varbit int varbitId);
@@ -858,7 +861,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * @param varps passed varbits
 	 * @param varbit the variable
 	 * @param value the value
-	 * @see Varbits
+	 * @see net.runelite.api.gameval.VarbitID
 	 */
 	@VisibleForDevtools
 	void setVarbitValue(int[] varps, @Varbit int varbit, int value);
@@ -895,7 +898,7 @@ public interface Client extends OAuthApi, GameEngine
 	 *
 	 * @return the widget flags table
 	 */
-	HashTable<IntegerNode> getWidgetFlags();
+	HashTable<WidgetConfigNode> getWidgetFlags();
 
 	/**
 	 * Gets the widget node component table.
@@ -917,7 +920,9 @@ public interface Client extends OAuthApi, GameEngine
 	 *
 	 * @param prayer the prayer
 	 * @return true if the prayer is active, false otherwise
+	 * @deprecated this method does not properly handle deadeye/eagle eye or mystic vigour/might
 	 */
+	@Deprecated
 	boolean isPrayerActive(Prayer prayer);
 
 	/**
@@ -959,7 +964,7 @@ public interface Client extends OAuthApi, GameEngine
 	 *
 	 * @param objectId the object ID
 	 * @return the corresponding object composition
-	 * @see ObjectID
+	 * @see net.runelite.api.gameval.ObjectID
 	 */
 	ObjectComposition getObjectDefinition(int objectId);
 
@@ -968,7 +973,7 @@ public interface Client extends OAuthApi, GameEngine
 	 *
 	 * @param npcId the npc ID
 	 * @return the corresponding NPC composition
-	 * @see NpcID
+	 * @see net.runelite.api.gameval.NpcID
 	 */
 	NPCComposition getNpcDefinition(int npcId);
 
@@ -1080,6 +1085,21 @@ public interface Client extends OAuthApi, GameEngine
 	RuneLiteObject createRuneLiteObject();
 
 	/**
+	 * Registers a new {@link RuneLiteObjectController} to its corresponding {@link WorldView}.
+	 */
+	void registerRuneLiteObject(RuneLiteObjectController controller);
+
+	/**
+	 * Removes a new {@link RuneLiteObjectController} from its corresponding {@link WorldView}.
+	 */
+	void removeRuneLiteObject(RuneLiteObjectController controller);
+
+	/**
+	 * Checks whether a {@link RuneLiteObjectController} is registered to any {@link WorldView}.
+	 */
+	boolean isRuneLiteObjectRegistered(RuneLiteObjectController controller);
+
+	/**
 	 * Loads an unlit model from the cache. The returned model shares
 	 * data such as faces, face colors, face transparencies, and vertex points with
 	 * other models. If you want to mutate these you MUST call the relevant {@code cloneX}
@@ -1122,7 +1142,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * Loads an animation from the cache
 	 *
 	 * @param id the ID of the animation. Any int is allowed, but implementations in the client
-	 * should be defined in {@link AnimationID}
+	 * should be defined in {@link net.runelite.api.gameval.AnimationID}
 	 */
 	Animation loadAnimation(int id);
 
@@ -1183,6 +1203,12 @@ public interface Client extends OAuthApi, GameEngine
 	void playSoundEffect(int id, int volume);
 
 	/**
+	 * Get the currently playing midi requests.
+	 * @return
+	 */
+	List<MidiRequest> getActiveMidiRequests();
+
+	/**
 	 * Gets the clients graphic buffer provider.
 	 *
 	 * @return the buffer provider
@@ -1224,7 +1250,7 @@ public interface Client extends OAuthApi, GameEngine
 	 *
 	 * @param inventory the inventory type
 	 * @return the item container
-	 * @see InventoryID
+	 * @see net.runelite.api.gameval.InventoryID
 	 */
 	@Nullable
 	ItemContainer getItemContainer(InventoryID inventory);
@@ -1234,7 +1260,7 @@ public interface Client extends OAuthApi, GameEngine
 	 *
 	 * @param id the inventory id
 	 * @return the item container
-	 * @see InventoryID
+	 * @see net.runelite.api.gameval.InventoryID
 	 */
 	@Nullable
 	ItemContainer getItemContainer(int id);
@@ -1261,19 +1287,19 @@ public interface Client extends OAuthApi, GameEngine
 	int[] getIntStack();
 
 	/**
-	 * Gets the length of the cs2 vm's string stack
+	 * Gets the length of the cs2 vm's object stack
 	 */
-	int getStringStackSize();
+	int getObjectStackSize();
 
 	/**
-	 * Sets the length of the cs2 vm's string stack
+	 * Sets the length of the cs2 vm's object stack
 	 */
-	void setStringStackSize(int stackSize);
+	void setObjectStackSize(int stackSize);
 
 	/**
-	 * Gets the cs2 vm's string stack
+	 * Gets the cs2 vm's object stack
 	 */
-	String[] getStringStack();
+	Object[] getObjectStack();
 
 	/**
 	 * Get the size of one of the cs2 vm's arrays.
@@ -1675,6 +1701,12 @@ public interface Client extends OAuthApi, GameEngine
 	void setInventoryDragDelay(int delay);
 
 	/**
+	 * Get the hostname of the current world
+	 * @return
+	 */
+	String getWorldHost();
+
+	/**
 	 * Gets a set of current world types that apply to the logged in world.
 	 *
 	 * @return the types for current world
@@ -1978,6 +2010,7 @@ public interface Client extends OAuthApi, GameEngine
 	 * Gets the ambient sound effects
 	 * @return
 	 */
+	@Deprecated
 	Deque<AmbientSoundEffect> getAmbientSoundEffects();
 
 	/**
@@ -2179,32 +2212,6 @@ public interface Client extends OAuthApi, GameEngine
 	}
 
 	/**
-	 * Gets an array of all cached NPCs.
-	 *
-	 * @return cached NPCs
-	 * @see WorldView#npcs()
-	 */
-	@Deprecated
-	default NPC[] getCachedNPCs()
-	{
-		var wv = getTopLevelWorldView();
-		return wv == null ? new NPC[0] : wv.npcs().getSparse();
-	}
-
-	/**
-	 * Gets an array of all cached players.
-	 *
-	 * @return cached players
-	 * @see WorldView#players()
-	 */
-	@Deprecated
-	default Player[] getCachedPlayers()
-	{
-		var wv = getTopLevelWorldView();
-		return wv == null ? new Player[0] : wv.players().getSparse();
-	}
-
-	/**
 	 * Gets an array of tile collision data.
 	 * <p>
 	 * The index into the array is the plane/z-axis coordinate.
@@ -2312,26 +2319,16 @@ public interface Client extends OAuthApi, GameEngine
 	 * @param targetX target x - if an actor target is supplied should be the target x
 	 * @param targetY target y - if an actor target is supplied should be the target y
 	 * @return the new projectile
-	 * @see WorldView#createProjectile(int, int, int, int, int, int, int, int, int, int, Actor, int, int)
 	 */
-	@Deprecated
-	default Projectile createProjectile(int id, int plane, int startX, int startY, int startZ, int startCycle, int endCycle,
-		int slope, int startHeight, int endHeight, @Nullable Actor target, int targetX, int targetY)
-	{
-		return getTopLevelWorldView().createProjectile(id, plane, startX, startY, startZ, startCycle, endCycle, slope, startHeight, endHeight, target, targetX, targetY);
-	}
+	Projectile createProjectile(int id, int plane, int startX, int startY, int startZ, int startCycle, int endCycle,
+		int slope, int startHeight, int endHeight, @Nullable Actor target, int targetX, int targetY);
 
 	/**
 	 * Gets a list of all projectiles currently spawned.
 	 *
 	 * @return all projectiles
-	 * @see WorldView#getProjectiles()
 	 */
-	@Deprecated
-	default Deque<Projectile> getProjectiles()
-	{
-		return getTopLevelWorldView().getProjectiles();
-	}
+	Deque<Projectile> getProjectiles();
 
 	/**
 	 * Gets a list of all graphics objects currently drawn.
@@ -2357,4 +2354,12 @@ public interface Client extends OAuthApi, GameEngine
 	{
 		return getTopLevelWorldView().getSelectedSceneTile();
 	}
+
+	/**
+	 * Applies an animation to a Model. The returned model is shared and shouldn't be used
+	 * after any other call to applyTransformations, including calls made by the client internally.
+	 * Vertices are cloned from the source model. Face transparencies are copied if either animation
+	 * animates transparency, otherwise it will share a reference. All other fields share a reference.
+	 */
+	Model applyTransformations(Model model, @Nullable Animation animA, int frameA, @Nullable Animation animB, int frameB);
 }
